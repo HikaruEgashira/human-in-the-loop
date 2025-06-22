@@ -41,6 +41,7 @@ impl<H: Human> ServerHandler for Handler<H> {
 
         match tool_params {
             HumanTools::AskHumanTool(ask_human_tool) => ask_human_tool.call_tool(&self.human).await,
+            HumanTools::NotifyHumanTool(notify_human_tool) => notify_human_tool.call_tool(&self.human).await,
         }
     }
 }

@@ -44,6 +44,11 @@ impl HumanInSlack {
     }
 
     pub async fn start_socket_connection(&self) -> anyhow::Result<()> {
+        // Check if WebSocket is already started to prevent duplicate connections
+        if self.websocket_started.get().is_some() {
+            return Ok(());
+        }
+
         // Get WebSocket URL
         let response = self.client
             .post("https://slack.com/api/apps.connections.open")
@@ -93,8 +98,11 @@ impl HumanInSlack {
                                         // For thread replies, use thread_ts
                                         if let Some(thread_ts) = event_data["thread_ts"].as_str() {
                                             let responses = pending_responses.read().await;
-                                            if let Some(sender) = responses.get(thread_ts) {
-                                                let _ = sender.send(text.to_string());
+                                            // Send to all pending responses for this thread
+                                            for (key, sender) in responses.iter() {
+                                                if key.starts_with(thread_ts) {
+                                                    let _ = sender.send(text.to_string());
+                                                }
                                             }
                                         }
                                     }
@@ -106,6 +114,9 @@ impl HumanInSlack {
             }
         });
 
+        // Mark WebSocket as started
+        let _ = self.websocket_started.set(());
+
         Ok(())
     }
 
@@ -115,10 +126,9 @@ impl HumanInSlack {
 impl Human for HumanInSlack {
     async fn ask(&self, question: &str) -> anyhow::Result<String> {
         // Ensure socket connection is established (only once)
-        self.websocket_started.get_or_try_init(|| async {
+        if self.websocket_started.get().is_none() {
             self.start_socket_connection().await?;
-            Ok::<(), anyhow::Error>(())
-        }).await?;
+        }
 
         // Check if thread already exists
         let is_initial_message = self.thread_ts.get().is_none();
@@ -158,9 +168,12 @@ impl Human for HumanInSlack {
             .map(|m| Duration::from_secs(m * 60))
             .unwrap_or(Duration::from_secs(300));
 
+        // Create a unique key for this specific request to avoid cross-talk
+        let request_key = format!("{}_{}", thread_ts, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis());
+        
         let mut receiver = {
             let mut pending = self.pending_responses.write().await;
-            let sender = pending.entry(thread_ts.to_string()).or_insert_with(|| {
+            let sender = pending.entry(request_key.clone()).or_insert_with(|| {
                 let (sender, _) = broadcast::channel(16);
                 sender
             });
@@ -189,11 +202,38 @@ impl Human for HumanInSlack {
         // Wait for response with timeout
         let result = tokio::time::timeout(timeout_duration, receiver.recv()).await;
 
+        // Clean up the receiver after use
+        let cleanup_responses = self.pending_responses.clone();
+        let cleanup_key = request_key.clone();
+        tokio::spawn(async move {
+            let mut responses = cleanup_responses.write().await;
+            responses.remove(&cleanup_key);
+        });
+
         match result {
             Ok(Ok(response)) => Ok(response),
             Ok(Err(broadcast::error::RecvError::Closed)) => Err(anyhow::anyhow!("Channel closed")),
             Ok(Err(broadcast::error::RecvError::Lagged(_))) => Err(anyhow::anyhow!("Message lagged")),
-            Err(_) => Ok("Please think autonomously. If you can adopt methods to delay decision-making, please use those approaches. If decision-making is necessary, please record what decisions you made in ./adr/yyyymmdd-hhmmss so you can proceed autonomously.".to_string()),
+            Err(_) => {
+                // Send timeout notification to Slack thread
+                let timeout_message = "タイムアウトしたので自動応答しました。";
+                let payload = json!({
+                    "channel": self.channel_id,
+                    "text": timeout_message,
+                    "thread_ts": thread_ts
+                });
+
+                // Send notification (ignore errors to not interrupt the main flow)
+                let _ = self.client
+                    .post("https://slack.com/api/chat.postMessage")
+                    .header("Authorization", format!("Bearer {}", self.bot_token))
+                    .header("Content-Type", "application/json")
+                    .json(&payload)
+                    .send()
+                    .await;
+
+                Ok("Please think autonomously. If you can adopt methods to delay decision-making, please use those approaches. If decision-making is necessary, please record what decisions you made in ./adr/yyyymmdd-hhmmss so you can proceed autonomously.".to_string())
+            },
         }
     }
 }

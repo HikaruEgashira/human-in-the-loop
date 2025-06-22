@@ -33,4 +33,27 @@ impl AskHumanTool {
     }
 }
 
-tool_box!(HumanTools, [AskHumanTool]);
+#[mcp_tool(
+    name = "notify_human",
+    description = "Report current activity or status to the user without expecting a response",
+    idempotent_hint = true,
+    destructive_hint = false,
+    open_world_hint = false,
+    read_only_hint = true
+)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct NotifyHumanTool {
+    /// The status or activity to report to the user
+    message: String,
+}
+impl NotifyHumanTool {
+    pub async fn call_tool(&self, human: &dyn Human) -> Result<CallToolResult, CallToolError> {
+        human
+            .ask(&self.message)
+            .await
+            .map_err(|e| CallToolError(e.into_boxed_dyn_error()))?;
+        Ok(CallToolResult::text_content("Status reported successfully".to_string(), None))
+    }
+}
+
+tool_box!(HumanTools, [AskHumanTool, NotifyHumanTool]);
