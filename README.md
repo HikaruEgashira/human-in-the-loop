@@ -1,6 +1,6 @@
 # Human-in-the-Loop MCP Server
 
-An MCP (Model Context Protocol) server that allows AI assistants to ask questions to humans via Discord.
+An MCP (Model Context Protocol) server that allows AI assistants to ask questions to humans via Discord or Slack.
 
 ## Overview
 
@@ -13,12 +13,14 @@ This MCP server is used when AI assistants need human input or judgment during t
 ## Requirements
 
 - Rust (1.70 or higher)
-- Discord account and bot
-- MCP-compatible AI client (Claude Desktop, Copilot Edits, etc.)
+- Discord account and bot OR Slack workspace and bot
+- MCP-compatible AI client (Claude Desktop, Claude Code, etc.)
 
 ## Setup
 
-### 1. Create Discord Bot
+Choose either Discord or Slack integration:
+
+### Option A: Discord Setup
 
 1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
 2. Create a new application
@@ -27,6 +29,10 @@ This MCP server is used when AI assistants need human input or judgment during t
    - Send Messages
    - Create Public Threads
    - Read Message History
+
+### Option B: Slack Setup
+
+See [docs/slack.md](docs/slack.md) for detailed Slack setup instructions.
 
 ### 2. Install
 
@@ -38,21 +44,38 @@ cargo install --git https://github.com/yourusername/human-in-the-loop.git
 
 ### Claude Desktop Configuration
 
-Add the following to `claude_desktop_config.json`:
-
+**For Discord:**
 ```json
 {
   "mcpServers": {
     "human-in-the-loop": {
       "command": "human-in-the-loop",
       "args": [
-        "--discord-channel-id", "channel-id",
-        "--discord-user-id", "user-id",
+        "discord",
+        "--token", "your-discord-bot-token",
+        "--channel-id", "channel-id",
+        "--user-id", "user-id",
         "--timeout", "5"
-      ],
-      "env": {
-        "DISCORD_TOKEN": "your-discord-bot-token"
-      }
+      ]
+    }
+  }
+}
+```
+
+**For Slack:**
+```json
+{
+  "mcpServers": {
+    "human-in-the-loop": {
+      "command": "human-in-the-loop",
+      "args": [
+        "slack",
+        "--bot-token", "your-slack-bot-token",
+        "--app-token", "your-slack-app-token",
+        "--channel-id", "channel-id",
+        "--user-id", "user-id",
+        "--timeout", "5"
+      ]
     }
   }
 }
