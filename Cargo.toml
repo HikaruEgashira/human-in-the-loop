@@ -1,7 +1,14 @@
 [package]
 name = "human-in-the-loop"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
+description = "Human-in-the-Loop MCP server that allows AI assistants to ask questions to humans via Discord"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/KOBA789/human-in-the-loop"
+homepage = "https://github.com/KOBA789/human-in-the-loop"
+readme = "README.md"
+keywords = ["mcp", "discord", "ai", "human-in-the-loop"]
+categories = ["development-tools", "web-programming"]
 
 [dependencies]
 anyhow = "1"

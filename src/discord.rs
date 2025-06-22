@@ -1,4 +1,5 @@
 use std::sync::{Arc, OnceLock};
+use std::time::Duration;
 
 use serenity::{
     all::{
@@ -44,15 +45,17 @@ pub struct HumanInDiscord {
     channel_id: ChannelId,
     handler: Handler,
     thread: OnceCell<ChannelId>,
+    timeout_minutes: Option<u64>,
 }
 
 impl HumanInDiscord {
-    pub fn new(user_id: UserId, channel_id: ChannelId) -> Self {
+    pub fn new(user_id: UserId, channel_id: ChannelId, timeout_minutes: Option<u64>) -> Self {
         Self {
             user_id,
             channel_id,
             handler: Handler::default(),
             thread: OnceCell::new(),
+            timeout_minutes,
         }
     }
 
@@ -89,10 +92,22 @@ impl Human for HumanInDiscord {
         thread
             .send_message(&ctx.http, CreateMessage::new().content(message_text))
             .await?;
-        let message = thread
-            .await_reply(ctx)
-            .await
-            .ok_or_else(|| anyhow::anyhow!("Failed to await message from the human in Discord"))?;
-        Ok(message.content)
+        
+        match self.timeout_minutes {
+            Some(timeout_minutes) => {
+                let timeout_duration = Duration::from_secs(timeout_minutes * 60);
+                match thread.await_reply(ctx).timeout(timeout_duration).await {
+                    Some(message) => Ok(message.content),
+                    None => Ok("Please think autonomously. If you can adopt methods to delay decision-making, please use those approaches. If decision-making is necessary, please record what decisions you made in ./adr/yyyymmdd-hhmmss so you can proceed autonomously.".to_string()),
+                }
+            }
+            None => {
+                let message = thread
+                    .await_reply(ctx)
+                    .await
+                    .ok_or_else(|| anyhow::anyhow!("Failed to await message from the human in Discord"))?;
+                Ok(message.content)
+            }
+        }
     }
 }

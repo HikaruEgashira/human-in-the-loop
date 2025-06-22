@@ -47,7 +47,8 @@ Add the following to `claude_desktop_config.json`:
       "command": "human-in-the-loop",
       "args": [
         "--discord-channel-id", "channel-id",
-        "--discord-user-id", "user-id"
+        "--discord-user-id", "user-id",
+        "--timeout", "5"
       ],
       "env": {
         "DISCORD_TOKEN": "your-discord-bot-token"
@@ -67,7 +68,8 @@ For Claude Code (claude.ai/code), add to your MCP settings:
     "command": "human-in-the-loop",
     "args": [
       "--discord-channel-id", "channel-id",
-      "--discord-user-id", "user-id"
+      "--discord-user-id", "user-id",
+      "--timeout", "5"
     ]
   }
 }
@@ -81,6 +83,16 @@ claude
 ```
 
 Note: The server automatically reads the Discord token from the `DISCORD_TOKEN` environment variable. You can also pass it via `--discord-token` argument if needed.
+
+## Configuration
+
+### Timeout Settings
+
+The `--timeout` parameter controls how long the AI will wait for human responses (default: 5 minutes). When the timeout expires, the AI receives a message encouraging autonomous decision-making:
+
+- If decision-making can be delayed, the AI should adopt those approaches
+- If decisions must be made, the AI should document them in `./adr/yyyymmdd-hhmmss` format
+- This allows the AI to proceed autonomously when humans are unavailable
 
 ### Usage
 
