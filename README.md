@@ -4,9 +4,9 @@ An MCP (Model Context Protocol) server that allows AI assistants to ask question
 
 ## Overview
 
-This MCP server is used when AI assistants need human input or judgment during their work. For example:
+This MCP server enables AI assistants to request human input or judgment during their work. For example:
 
-- When having an LLM create documentation, the AI designs the structure while humans provide specific content
+- When creating documentation, the AI designs the structure while humans provide specific content
 - When the AI needs confirmation on uncertain decisions
 - When specialized knowledge or personal information is required
 
@@ -14,115 +14,41 @@ This MCP server is used when AI assistants need human input or judgment during t
 
 - Rust (1.70 or higher)
 - Discord account and bot
-- MCP-compatible AI client (Claude Desktop, Copilot Edits, etc.)
+- MCP-compatible AI client (Claude Desktop, Claude Code, etc.)
 
-## Setup
+## Quick Start
 
-### 1. Create Discord Bot
+1. **Setup Discord Bot**: Follow the [Discord Setup Guide](docs/discord.md)
+2. **Install**: `cargo install --git https://github.com/KOBA789/human-in-the-loop.git`
+3. **Configure your MCP client** with the server details (see setup guide)
 
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create a new application
-3. Create a bot in the Bot section and obtain the token
-4. Set required permissions:
-   - Send Messages
-   - Create Public Threads
-   - Read Message History
+## Documentation
 
-### 2. Install
-
-```bash
-cargo install --git https://github.com/yourusername/human-in-the-loop.git
-```
-
-## Connecting with MCP Clients
-
-### Claude Desktop Configuration
-
-Add the following to `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "human-in-the-loop": {
-      "command": "human-in-the-loop",
-      "args": [
-        "--discord-channel-id", "channel-id",
-        "--discord-user-id", "user-id",
-        "--timeout", "5"
-      ],
-      "env": {
-        "DISCORD_TOKEN": "your-discord-bot-token"
-      }
-    }
-  }
-}
-```
-
-### Claude Code Configuration
-
-For Claude Code (claude.ai/code), add to your MCP settings:
-
-```json
-{
-  "human-in-the-loop": {
-    "command": "human-in-the-loop",
-    "args": [
-      "--discord-channel-id", "channel-id",
-      "--discord-user-id", "user-id",
-      "--timeout", "5"
-    ]
-  }
-}
-```
-
-Set the Discord token as an environment variable before running Claude Code:
-
-```bash
-export DISCORD_TOKEN="your-discord-bot-token"
-claude
-```
-
-Note: The server automatically reads the Discord token from the `DISCORD_TOKEN` environment variable. You can also pass it via `--discord-token` argument if needed.
-
-## Configuration
-
-### Timeout Settings
-
-The `--timeout` parameter controls how long the AI will wait for human responses (default: 5 minutes). When the timeout expires, the AI receives a message encouraging autonomous decision-making:
-
-- If decision-making can be delayed, the AI should adopt those approaches
-- If decisions must be made, the AI should document them in `./adr/yyyymmdd-hhmmss` format
-- This allows the AI to proceed autonomously when humans are unavailable
-
-### Usage
-
-AI assistants can ask questions to humans using the `ask_human` tool:
-
-```
-Human: Please create a documentation outline. You can ask the human as you need.
-Assistant: I'll create a documentation outline. Let me ask you some questions first.
-[Uses ask_human tool]
-```
-
-The AI posts questions in Discord and mentions the specified user. When the user replies in Discord, the response is returned to the AI.
+- [Discord Setup Guide](docs/discord.md) - Complete Discord bot setup and configuration
+- [Slack Setup Guide](docs/slack.md) - Complete Slack app setup and configuration
 
 ## How It Works
 
-1. AI assistant calls the `ask_human` tool
-2. MCP server creates a thread in the specified Discord channel (or uses existing thread)
-3. Posts the question and mentions the specified user
-4. Waits for user's reply
-5. Returns the reply content to the AI assistant
+1. AI assistant calls the `ask_human` tool when it needs human input
+2. MCP server posts the question in Discord and mentions the specified user
+3. Human responds in Discord
+4. Response is returned to the AI assistant
+5. AI continues with the human-provided information
 
-## Finding Discord IDs
+## Configuration Options
 
-### Getting Channel ID
-1. Enable Developer Mode in Discord (Settings → Advanced → Developer Mode)
-2. Right-click on channel → "Copy ID"
+- **Timeout**: Configure how long to wait for human responses (default: 5 minutes)
+- **Auto-fallback**: When timeout expires, AI receives guidance for autonomous decision-making
+- **Thread support**: Questions are organized in threads for better conversation flow
 
-### Getting User ID
-1. Right-click on user → "Copy ID"
+## Example Usage
 
-## Roadmap
+```
+Human: Please create a documentation outline. You can ask me questions as needed.
+Assistant: I'll create a documentation outline. Let me ask you some questions first.
+[Uses ask_human tool to gather requirements]
+```
 
-- **Future Migration to MCP Elicitation**: Once MCP's Elicitation implementation becomes more widespread and standardized, we plan to migrate the UI from Discord to native MCP Elicitation. This will provide a more integrated experience directly within MCP-compatible clients.
+## Future Plans
+
+- **Migration to MCP Elicitation**: Once MCP's Elicitation implementation becomes standardized, we plan to migrate from Discord/Slack to native MCP Elicitation for a more integrated experience.
