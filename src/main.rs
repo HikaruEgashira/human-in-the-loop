@@ -24,6 +24,8 @@ struct Args {
     discord_channel_id: ChannelId,
     #[clap(long, env = "DISCORD_USER_ID")]
     discord_user_id: UserId,
+    #[clap(long, help = "Timeout in minutes for human responses", default_value = "5")]
+    timeout: u64,
 }
 
 #[tokio::main]
@@ -32,6 +34,7 @@ async fn main() -> SdkResult<()> {
         discord_token,
         discord_channel_id,
         discord_user_id,
+        timeout,
     } = Args::parse();
 
     let server_details = InitializeResult {
@@ -59,7 +62,7 @@ async fn main() -> SdkResult<()> {
 
     let transport = StdioTransport::new(TransportOptions::default())?;
 
-    let human = HumanInDiscord::new(discord_user_id, discord_channel_id);
+    let human = HumanInDiscord::new(discord_user_id, discord_channel_id, Some(timeout));
     let discord = discord::start(&discord_token, human.handler().clone());
 
     let server: ServerRuntime =
