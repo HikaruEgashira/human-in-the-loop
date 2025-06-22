@@ -1,6 +1,6 @@
 # Human-in-the-Loop MCP Server
 
-An MCP (Model Context Protocol) server that allows AI assistants to ask questions to humans via Discord.
+An MCP (Model Context Protocol) server that allows AI assistants to ask questions to humans via Discord or Slack.
 
 ## Overview
 
@@ -13,14 +13,15 @@ This MCP server enables AI assistants to request human input or judgment during 
 ## Requirements
 
 - Rust (1.70 or higher)
-- Discord account and bot
+- Discord account and bot OR Slack workspace and bot
 - MCP-compatible AI client (Claude Desktop, Claude Code, etc.)
 
 ## Quick Start
 
 1. **Setup Discord Bot**: Follow the [Discord Setup Guide](docs/discord.md)
-2. **Install**: `cargo install --git https://github.com/KOBA789/human-in-the-loop.git`
-3. **Configure your MCP client** with the server details (see setup guide)
+2. **Setup Slack App**: Follow the [Slack Setup Guide](docs/slack.md)
+3. **Install**: `cargo install --git https://github.com/KOBA789/human-in-the-loop.git`
+4. **Configure your MCP client** with the server details (see setup guide)
 
 ## Documentation
 
